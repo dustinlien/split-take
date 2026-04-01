@@ -43,7 +43,7 @@ export async function getUser() {
 export async function fetchTests() {
   const { data, error } = await supabase
     .from('tests')
-    .select('*, variants(*, variant_changes(*))')
+    .select('*, variants!variants_test_id_fkey(*, variant_changes(*))')
     .order('created_at', { ascending: false })
   if (error) throw error
   return data
@@ -52,7 +52,7 @@ export async function fetchTests() {
 export async function fetchTest(id) {
   const { data, error } = await supabase
     .from('tests')
-    .select('*, variants(*, variant_changes(*))')
+    .select('*, variants!variants_test_id_fkey(*, variant_changes(*))')
     .eq('id', id)
     .single()
   if (error) throw error
