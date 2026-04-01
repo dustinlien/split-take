@@ -75,6 +75,15 @@ export function generateSnippet(supabaseUrl, anonKey) {
         else el.style.backgroundImage = 'url(' + ch.new_value + ')';
       } else if (ch.change_type === 'visibility') {
         el.style.display = ch.new_value === 'hide' ? 'none' : '';
+      } else if (ch.change_type === 'insert_after' || ch.change_type === 'insert_before') {
+        /* Duplicate guard — use change ID as a data attribute marker */
+        var marker = 'data-st-' + ch.id.replace(/-/g, '').slice(0, 12);
+        if (document.querySelector('[' + marker + ']')) return;
+        var pos = ch.change_type === 'insert_after' ? 'afterend' : 'beforebegin';
+        /* Wrap in a hidden span so we can find it on return visits */
+        el.insertAdjacentHTML(pos,
+          '<span ' + marker + '="" style="display:contents">' + ch.new_value + '</span>'
+        );
       }
     });
   }
