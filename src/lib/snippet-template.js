@@ -123,12 +123,39 @@ export function generateSnippet(supabaseUrl, anonKey) {
   /* 1. Hide body immediately to prevent flash of original content */
   document.documentElement.style.visibility = 'hidden';
 
-  /* 2. Kick off async work in parallel with HTML parsing */
-  var testsFetch = fetchTests(location.href);
+  /* 2. Kick off fetch in parallel with HTML parsing */
+  var cleanUrl = location.href.split('?')[0].split('#')[0].replace(/\\/$/, '');
+  var testsFetch = fetchTests(cleanUrl);
   var assignments = {};   /* testId → { variantId, visitorHash } */
 
-  /* 3. Once DOM is ready, apply changes and reveal */
+  /* 3. Once DOM is ready, check for preview mode or run normally */
   document.addEventListener('DOMContentLoaded', function () {
+
+    /* ── Preview mode ────────────────────────────────── */
+    /* Triggered by ?_st_preview=<variant-id> in the URL. */
+    /* Applies changes for that variant only — no logging, no cookies. */
+    var previewId = new URLSearchParams(location.search).get('_st_preview');
+    if (previewId) {
+      testsFetch.then(function (tests) {
+        try {
+          tests.forEach(function (test) {
+            var variant = (test.variants || []).find(function (v) { return v.id === previewId; });
+            if (variant && variant.variant_changes && variant.variant_changes.length) {
+              applyChanges(variant.variant_changes);
+            }
+          });
+        } catch (e) {
+          console.error('[SplitTake preview]', e);
+        }
+      }).finally(function () {
+        document.documentElement.style.visibility = '';
+        /* Expose a no-op convert in preview so page code doesn't error */
+        window.SplitTake = { convert: function () {}, _preview: true };
+      });
+      return;
+    }
+
+    /* ── Normal mode ─────────────────────────────────── */
     var visitorId = getCookie(VISITOR_KEY);
     if (!visitorId) {
       visitorId = uuid();
@@ -171,7 +198,6 @@ export function generateSnippet(supabaseUrl, anonKey) {
           console.error('[SplitTake]', e);
         }
       }).finally(function () {
-        /* Always reveal the page */
         document.documentElement.style.visibility = '';
       });
     });
