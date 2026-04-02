@@ -118,32 +118,45 @@ export function generateSnippet(supabaseUrl, anonKey) {
     ]).catch(function () { return []; });
   }
 
+  /* Fetch a single variant by ID — used for preview mode, no status filter */
+  function fetchVariantForPreview(variantId) {
+    var qs = '?select=id,label,variant_changes(*)&id=eq.' + encodeURIComponent(variantId);
+    return Promise.race([
+      fetch(SUPABASE_URL + '/rest/v1/variants' + qs, {
+        headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY },
+      }).then(function (r) { return r.ok ? r.json() : []; }),
+      new Promise(function (res) { setTimeout(function () { res([]); }, 1500); }),
+    ]).catch(function () { return []; });
+  }
+
   /* ── Boot sequence ─────────────────────────────────── */
 
   /* 1. Hide body immediately to prevent flash of original content */
   document.documentElement.style.visibility = 'hidden';
 
   /* 2. Kick off fetch in parallel with HTML parsing */
-  var cleanUrl = location.href.split('?')[0].split('#')[0].replace(/\\/$/, '');
-  var testsFetch = fetchTests(cleanUrl);
-  var assignments = {};   /* testId → { variantId, visitorHash } */
+  var cleanUrl   = location.href.split('?')[0].split('#')[0].replace(/\\/$/, '');
+  var previewId  = new URLSearchParams(location.search).get('_st_preview');
+  /* In preview mode fetch the variant directly (no status filter).
+     In normal mode fetch all running tests for this URL. */
+  var testsFetch    = previewId ? null : fetchTests(cleanUrl);
+  var previewFetch  = previewId ? fetchVariantForPreview(previewId) : null;
+  var assignments   = {};   /* testId → { variantId, visitorHash } */
 
   /* 3. Once DOM is ready, check for preview mode or run normally */
   document.addEventListener('DOMContentLoaded', function () {
 
     /* ── Preview mode ────────────────────────────────── */
     /* Triggered by ?_st_preview=<variant-id> in the URL. */
-    /* Applies changes for that variant only — no logging, no cookies. */
-    var previewId = new URLSearchParams(location.search).get('_st_preview');
+    /* Fetches that variant directly — works on draft, paused, or running tests. */
+    /* No logging, no cookies. */
     if (previewId) {
-      testsFetch.then(function (tests) {
+      previewFetch.then(function (variants) {
         try {
-          tests.forEach(function (test) {
-            var variant = (test.variants || []).find(function (v) { return v.id === previewId; });
-            if (variant && variant.variant_changes && variant.variant_changes.length) {
-              applyChanges(variant.variant_changes);
-            }
-          });
+          var variant = variants && variants[0];
+          if (variant && variant.variant_changes && variant.variant_changes.length) {
+            applyChanges(variant.variant_changes);
+          }
         } catch (e) {
           console.error('[SplitTake preview]', e);
         }
