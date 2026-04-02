@@ -119,16 +119,6 @@ export default function ResultsDashboard({ test }) {
         Unique visitors and converters only. RPV = revenue per visitor. AOV = average order value.
       </p>
 
-      {/* Conversion logging reminder */}
-      <div className="card px-5 py-4 bg-amber-50 border-amber-200 space-y-2">
-        <p className="text-xs font-medium text-amber-800">Logging conversions with revenue</p>
-        <p className="text-xs text-amber-700">
-          Pass the order value as the second argument to track revenue per variant:
-        </p>
-        <div className="font-mono text-xs bg-gray-900 text-green-400 rounded-lg px-4 py-3 whitespace-pre">
-          {`// Click conversion (no revenue):\nSplitTake.convert()\n\n// Purchase conversion (Shopify):\nSplitTake.convert(null, {{ checkout.total_price | divided_by: 100.0 }})`}
-        </div>
-      </div>
     </div>
   )
 }

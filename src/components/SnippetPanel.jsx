@@ -40,14 +40,9 @@ export default function SnippetPanel({ test }) {
           </div>
         )}
 
-        <div className="mt-4 rounded-md bg-blue-50 border border-blue-200 px-4 py-3 space-y-1">
-          <p className="text-xs font-medium text-blue-800">💡 How to check mobile</p>
-          <p className="text-xs text-blue-700">
-            Scan the QR code with your phone to see the variant on real mobile hardware.
-            Or open the link on desktop and press <kbd className="font-mono bg-blue-100 px-1 rounded">Cmd+Shift+M</kbd> in
-            Chrome to toggle device emulation.
-          </p>
-        </div>
+        <p className="mt-3 text-xs text-gray-400">
+          Scan the QR code on your phone to preview on real mobile hardware, or open on desktop and press <kbd className="font-mono bg-gray-100 px-1 rounded text-gray-500">Cmd+Shift+M</kbd> in Chrome for device emulation.
+        </p>
       </div>
 
       <hr className="border-gray-200" />
