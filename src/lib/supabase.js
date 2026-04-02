@@ -153,7 +153,7 @@ export async function fetchResults(testId) {
       .eq('test_id', testId),
     supabase
       .from('conversions')
-      .select('variant_id, visitor_token')
+      .select('variant_id, visitor_token, revenue')
       .eq('test_id', testId),
   ])
   if (e1) throw e1

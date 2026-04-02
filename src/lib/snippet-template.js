@@ -150,7 +150,7 @@ export function generateSnippet(supabaseUrl, anonKey) {
       }).finally(function () {
         document.documentElement.style.visibility = '';
         /* Expose a no-op convert in preview so page code doesn't error */
-        window.SplitTake = { convert: function () {}, _preview: true };
+        window.SplitTake = { convert: function () {}, _preview: true };  /* no-op in preview */
       });
       return;
     }
@@ -207,12 +207,18 @@ export function generateSnippet(supabaseUrl, anonKey) {
 
   /*
    * Call SplitTake.convert() anywhere after a conversion event.
-   *   SplitTake.convert()          → logs conversion for all active tests
-   *   SplitTake.convert('test-id') → logs conversion for a specific test only
+   *   SplitTake.convert()               → logs for all active tests, no revenue
+   *   SplitTake.convert(null, 49.99)    → logs for all tests with revenue value
+   *   SplitTake.convert('test-id')      → logs for a specific test only
+   *   SplitTake.convert('test-id', 49.99) → specific test + revenue
+   *
+   * Revenue should be a number in dollars (e.g. 49.99).
+   * On Shopify order confirmation use: SplitTake.convert(null, {{ checkout.total_price | divided_by: 100.0 }})
    */
   window.SplitTake = {
-    convert: function (testId) {
+    convert: function (testId, revenue) {
       var ids = testId ? [testId] : Object.keys(assignments);
+      var rev = (typeof revenue === 'number' && revenue > 0) ? revenue : 0;
       ids.forEach(function (id) {
         var a = assignments[id];
         if (a) {
@@ -220,6 +226,7 @@ export function generateSnippet(supabaseUrl, anonKey) {
             test_id: id,
             variant_id: a.variantId,
             visitor_token: a.visitorHash,
+            revenue: rev,
           });
         }
       });
