@@ -207,6 +207,25 @@ export function generateSnippet(supabaseUrl, anonKey) {
               });
             }
           });
+
+          /* Auto-click tracking: fire convert() once per page session
+             when any <button> or <a> is clicked */
+          var clicked = false;
+          document.addEventListener('click', function (e) {
+            if (clicked) return;
+            var el = e.target;
+            /* Walk up to 3 levels to catch clicks on child elements inside buttons/links */
+            for (var i = 0; i < 3; i++) {
+              if (!el) break;
+              if (el.tagName === 'BUTTON' || el.tagName === 'A') {
+                clicked = true;
+                window.SplitTake.convert();
+                return;
+              }
+              el = el.parentElement;
+            }
+          }, { passive: true });
+
         } catch (e) {
           console.error('[SplitTake]', e);
         }
