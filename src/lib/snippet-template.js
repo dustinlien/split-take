@@ -107,7 +107,7 @@ export function generateSnippet(supabaseUrl, anonKey) {
     /* Match on URL without hash, without trailing slash */
     var url = pageUrl.split('#')[0].replace(/\\/$/, '');
     var qs =
-      '?select=id,variants(id,label,traffic_weight,is_control,variant_changes(*))' +
+      '?select=id,variants!variants_test_id_fkey(id,label,traffic_weight,is_control,variant_changes(*))' +
       '&status=eq.running' +
       '&url=eq.' + encodeURIComponent(url);
     return Promise.race([
