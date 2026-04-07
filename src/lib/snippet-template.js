@@ -262,17 +262,14 @@ export function generateSnippet(supabaseUrl, anonKey) {
       var rev = (typeof revenue === 'number' && revenue > 0) ? revenue : 0;
       ids.forEach(function (id) {
         var a = assignments[id];
-        if (!a) return;
-        /* Deduplicate: skip if this visitor already converted for this test */
-        var convKey = '_stc_' + id.replace(/-/g, '').slice(0, 16);
-        if (getCookie(convKey)) return;
-        setCookie(convKey, '1', COOKIE_DAYS);
-        apiPost('/rest/v1/conversions', {
-          test_id: id,
-          variant_id: a.variantId,
-          visitor_token: a.visitorHash,
-          revenue: rev,
-        });
+        if (a) {
+          apiPost('/rest/v1/conversions', {
+            test_id: id,
+            variant_id: a.variantId,
+            visitor_token: a.visitorHash,
+            revenue: rev,
+          });
+        }
       });
     },
   };
