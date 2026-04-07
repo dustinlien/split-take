@@ -147,9 +147,6 @@ export function generateSnippet(supabaseUrl, anonKey) {
   document.addEventListener('DOMContentLoaded', function () {
 
     /* ── Preview mode ────────────────────────────────── */
-    /* Triggered by ?_st_preview=<variant-id> in the URL. */
-    /* Fetches that variant directly — works on draft, paused, or running tests. */
-    /* No logging, no cookies. */
     if (previewId) {
       previewFetch.then(function (variants) {
         try {
@@ -162,13 +159,36 @@ export function generateSnippet(supabaseUrl, anonKey) {
         }
       }).finally(function () {
         document.documentElement.style.visibility = '';
-        /* Expose a no-op convert in preview so page code doesn't error */
-        window.SplitTake = { convert: function () {}, _preview: true };  /* no-op in preview */
+        window.SplitTake = { convert: function () {}, _preview: true };
       });
       return;
     }
 
     /* ── Normal mode ─────────────────────────────────── */
+
+    /* Set up click listener immediately — before the fetch resolves —
+       so we never miss an early click. Buffered until assignments are ready. */
+    var clicked = false;
+    var clickPending = false;
+    document.addEventListener('click', function (e) {
+      if (clicked) return;
+      var el = e.target;
+      for (var i = 0; i < 3; i++) {
+        if (!el) break;
+        if (el.tagName === 'BUTTON' || el.tagName === 'A') {
+          clicked = true;
+          /* If assignments aren't ready yet, buffer the convert call */
+          if (Object.keys(assignments).length > 0) {
+            window.SplitTake.convert();
+          } else {
+            clickPending = true;
+          }
+          return;
+        }
+        el = el.parentElement;
+      }
+    }, { passive: true });
+
     var visitorId = getCookie(VISITOR_KEY);
     if (!visitorId) {
       visitorId = uuid();
@@ -208,23 +228,11 @@ export function generateSnippet(supabaseUrl, anonKey) {
             }
           });
 
-          /* Auto-click tracking: fire convert() once per page session
-             when any <button> or <a> is clicked */
-          var clicked = false;
-          document.addEventListener('click', function (e) {
-            if (clicked) return;
-            var el = e.target;
-            /* Walk up to 3 levels to catch clicks on child elements inside buttons/links */
-            for (var i = 0; i < 3; i++) {
-              if (!el) break;
-              if (el.tagName === 'BUTTON' || el.tagName === 'A') {
-                clicked = true;
-                window.SplitTake.convert();
-                return;
-              }
-              el = el.parentElement;
-            }
-          }, { passive: true });
+          /* Flush any click that came in before assignments were ready */
+          if (clickPending) {
+            window.SplitTake.convert();
+            clickPending = false;
+          }
 
         } catch (e) {
           console.error('[SplitTake]', e);
