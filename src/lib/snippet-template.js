@@ -167,25 +167,17 @@ export function generateSnippet(supabaseUrl, anonKey) {
     /* ── Normal mode ─────────────────────────────────── */
 
     /* Set up click listener immediately — before the fetch resolves —
-       so we never miss an early click. Buffered until assignments are ready. */
+       so we never miss an early click. Fires on any click; once per session.
+       Buffered until assignments are ready. */
     var clicked = false;
     var clickPending = false;
-    document.addEventListener('click', function (e) {
+    document.addEventListener('click', function () {
       if (clicked) return;
-      var el = e.target;
-      for (var i = 0; i < 3; i++) {
-        if (!el) break;
-        if (el.tagName === 'BUTTON' || el.tagName === 'A') {
-          clicked = true;
-          /* If assignments aren't ready yet, buffer the convert call */
-          if (Object.keys(assignments).length > 0) {
-            window.SplitTake.convert();
-          } else {
-            clickPending = true;
-          }
-          return;
-        }
-        el = el.parentElement;
+      clicked = true;
+      if (Object.keys(assignments).length > 0) {
+        window.SplitTake.convert();
+      } else {
+        clickPending = true;
       }
     }, { passive: true });
 
