@@ -353,7 +353,7 @@ function AddChangeRow({ variantId, onRefresh }) {
           <select
             className="input text-xs"
             value={changeType}
-            onChange={(e) => { setChangeType(e.target.value); setNewValue('') }}
+            onChange={(e) => { setChangeType(e.target.value); setNewValue(e.target.value === 'visibility' ? 'hide' : '') }}
           >
             {CHANGE_TYPES.map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
