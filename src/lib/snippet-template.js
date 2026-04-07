@@ -167,17 +167,25 @@ export function generateSnippet(supabaseUrl, anonKey) {
     /* ── Normal mode ─────────────────────────────────── */
 
     /* Set up click listener immediately — before the fetch resolves —
-       so we never miss an early click. Fires on any click; once per session.
+       so we never miss an early click. Fires on any <a> link click; once per session.
+       Walks up the DOM so clicks on children inside <a> tags are caught.
        Buffered until assignments are ready. */
     var clicked = false;
     var clickPending = false;
-    document.addEventListener('click', function () {
+    document.addEventListener('click', function (e) {
       if (clicked) return;
-      clicked = true;
-      if (Object.keys(assignments).length > 0) {
-        window.SplitTake.convert();
-      } else {
-        clickPending = true;
+      var el = e.target;
+      while (el && el !== document) {
+        if (el.tagName === 'A') {
+          clicked = true;
+          if (Object.keys(assignments).length > 0) {
+            window.SplitTake.convert();
+          } else {
+            clickPending = true;
+          }
+          return;
+        }
+        el = el.parentElement;
       }
     }, { passive: true });
 
