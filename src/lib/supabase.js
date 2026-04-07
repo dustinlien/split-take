@@ -143,6 +143,52 @@ export async function deleteChange(id) {
   if (error) throw error
 }
 
+// ── Duplicate Test ────────────────────────────────────────────────────────────
+
+export async function duplicateTest(testId) {
+  // 1. Fetch the full test with variants and changes
+  const { data: source, error: e0 } = await supabase
+    .from('tests')
+    .select('*, variants!variants_test_id_fkey(*, variant_changes(*))')
+    .eq('id', testId)
+    .single()
+  if (e0) throw e0
+
+  // 2. Create the new test as draft
+  const { data: newTest, error: e1 } = await supabase
+    .from('tests')
+    .insert({ name: source.name + ' (copy)', url: source.url, status: 'draft' })
+    .select()
+    .single()
+  if (e1) throw e1
+
+  // 3. Duplicate each variant and its changes
+  for (const variant of (source.variants ?? [])) {
+    const { data: newVariant, error: e2 } = await supabase
+      .from('variants')
+      .insert({ test_id: newTest.id, label: variant.label, traffic_weight: variant.traffic_weight, is_control: variant.is_control })
+      .select()
+      .single()
+    if (e2) throw e2
+
+    for (const change of (variant.variant_changes ?? [])) {
+      const { error: e3 } = await supabase
+        .from('variant_changes')
+        .insert({ variant_id: newVariant.id, element_id: change.element_id, change_type: change.change_type, new_value: change.new_value })
+      if (e3) throw e3
+    }
+  }
+
+  // 4. Return the full new test
+  const { data: full, error: e4 } = await supabase
+    .from('tests')
+    .select('*, variants!variants_test_id_fkey(*, variant_changes(*))')
+    .eq('id', newTest.id)
+    .single()
+  if (e4) throw e4
+  return full
+}
+
 // ── Results ───────────────────────────────────────────────────────────────────
 
 export async function fetchResults(testId) {

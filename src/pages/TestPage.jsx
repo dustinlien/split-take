@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { fetchTest, updateTestStatus, endTest } from '../lib/supabase'
+import { fetchTest, updateTestStatus, endTest, duplicateTest } from '../lib/supabase'
 import VariantEditor    from '../components/VariantEditor'
 import ResultsDashboard from '../components/ResultsDashboard'
 import SnippetPanel     from '../components/SnippetPanel'
@@ -70,6 +70,20 @@ export default function TestPage({ test: initialTest, onBack, onTestUpdated }) {
   const canEnd     = test.status === 'running' || test.status === 'paused'
   const isEnded    = test.status === 'ended'
 
+  async function handleDuplicate() {
+    setLoading(true)
+    setError(null)
+    try {
+      const copy = await duplicateTest(test.id)
+      onTestUpdated?.(copy)
+      onBack()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const totalWeight = (test.variants ?? []).reduce((s, v) => s + v.traffic_weight, 0)
   const hasControl  = (test.variants ?? []).some((v) => v.is_control)
   const canLaunchOk = totalWeight === 100 && hasControl && (test.variants ?? []).length >= 2
@@ -134,6 +148,14 @@ export default function TestPage({ test: initialTest, onBack, onTestUpdated }) {
                   End test
                 </button>
               )}
+              <button
+                onClick={handleDuplicate}
+                disabled={loading}
+                title="Duplicate this test as a new draft"
+                className="h-8 px-3 text-xs font-medium border border-gray-200 text-gray-600 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-40"
+              >
+                Duplicate
+              </button>
               <button
                 onClick={reload}
                 className="h-8 w-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors text-sm"
