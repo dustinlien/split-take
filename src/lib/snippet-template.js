@@ -93,6 +93,7 @@ export function generateSnippet(supabaseUrl, anonKey) {
   function apiPost(path, body) {
     return fetch(SUPABASE_URL + path, {
       method: 'POST',
+      keepalive: true,
       headers: {
         apikey: ANON_KEY,
         Authorization: 'Bearer ' + ANON_KEY,
