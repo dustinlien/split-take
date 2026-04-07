@@ -146,17 +146,27 @@ export async function deleteChange(id) {
 // ── Results ───────────────────────────────────────────────────────────────────
 
 export async function fetchResults(testId) {
-  const [{ data: visits, error: e1 }, { data: conversions, error: e2 }] = await Promise.all([
-    supabase
-      .from('visits')
-      .select('variant_id, visitor_token')
-      .eq('test_id', testId),
-    supabase
-      .from('conversions')
-      .select('variant_id, visitor_token, revenue')
-      .eq('test_id', testId),
+  async function fetchAll(table, columns) {
+    const pageSize = 1000
+    let from = 0
+    let all = []
+    while (true) {
+      const { data, error } = await supabase
+        .from(table)
+        .select(columns)
+        .eq('test_id', testId)
+        .range(from, from + pageSize - 1)
+      if (error) throw error
+      all = all.concat(data)
+      if (data.length < pageSize) break
+      from += pageSize
+    }
+    return all
+  }
+
+  const [visits, conversions] = await Promise.all([
+    fetchAll('visits', 'variant_id, visitor_token'),
+    fetchAll('conversions', 'variant_id, visitor_token, revenue'),
   ])
-  if (e1) throw e1
-  if (e2) throw e2
   return { visits, conversions }
 }
